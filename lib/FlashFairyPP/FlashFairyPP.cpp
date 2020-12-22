@@ -39,6 +39,8 @@ FlashFairyPP::value_type FlashFairyPP::getValue(key_type key) const {
 bool FlashFairyPP::setValue(key_type key, value_type value) {
   if (key >= kNumKeys) {
     return false;
+  } else if (getValue(key) == value) {
+    return true;
   } else {
     FlashLine_t line;
     SetLine(line, key, value);

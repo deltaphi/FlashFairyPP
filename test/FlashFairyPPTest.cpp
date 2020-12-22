@@ -6,6 +6,13 @@ namespace FlashFairyPP {
 
 TEST_F(VirtualFlashFixture, Read_Empty) { EXPECT_EQ(flashFairy.getValue(42), 0xCAFE); }
 
+TEST_F(VirtualFlashFixture, Write_Twice) {
+  EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
+  EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
+  EXPECT_EQ(flashFairy.getValue(42), 0xBEEF);
+  memoryIsEmpty((pages[0]) + 4, FlashFairyPP::Config_t::pageSize - 4);
+}
+
 TEST_F(VirtualFlashFixture, Write_OutOfBounds) {
   EXPECT_EQ(flashFairy.getValue(FlashFairyPP::kNumKeys - 1), 0xCAFE);
   EXPECT_FALSE(flashFairy.setValue(FlashFairyPP::kNumKeys, 0xDEAD));
