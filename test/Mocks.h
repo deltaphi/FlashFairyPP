@@ -11,7 +11,6 @@ class VirtualFlashFixture : public ::testing::Test {
  public:
   void SetUp() {
     memset(pages, 0xFF, sizeof(pages));
-    FlashFairyPP::Config_t config;
     config.pages[0] = reinterpret_cast<uint32_t*>(&pages[0]);
     config.pages[1] = reinterpret_cast<uint32_t*>(&pages[1]);
     flashFairy.Init(config);
@@ -22,6 +21,8 @@ class VirtualFlashFixture : public ::testing::Test {
   using PageType = uint8_t[1024];
 
   PageType pages[2];
+  FlashFairyPP::Config_t config;
+
   FlashFairyPP flashFairy;
 
   static void pageIsEmpty(uint8_t* page) { memoryIsEmpty(page, FlashFairyPP::Config_t::pageSize); }

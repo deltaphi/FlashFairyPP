@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#define GetKey(line) (static_cast<key_type>(line >> sizeof(value_type)))
+#define GetKey(line) (static_cast<key_type>(line >> (sizeof(value_type) * 8)))
 #define GetValue(line) (static_cast<value_type>(line))
 
 #define SetLine(line, key, value) (line = (static_cast<FlashLine_t>(key) << (sizeof(value) * 8)) | value)
@@ -24,31 +24,36 @@ bool FlashFairyPP::Init(const Config_t& configuration) {
 }
 
 FlashFairyPP::value_type FlashFairyPP::getValue(key_type key) const {
-  if (key > kNumKeys) {
-    key = kNumKeys;
-  }
-  if (tlTable_[key] == nullptr) {
+  if (key >= kNumKeys) {
     return npos;
   } else {
-    value_type value = GetValue(*(tlTable_[key]));
-    return value;
+    if (tlTable_[key] == nullptr) {
+      return npos;
+    } else {
+      value_type value = GetValue(*(tlTable_[key]));
+      return value;
+    }
   }
 }
 
 bool FlashFairyPP::setValue(key_type key, value_type value) {
-  FlashLine_t line;
-  SetLine(line, key, value);
-  page_pointer_type nextFreeLine = findFreeLine(activePage_);
-  if (nextFreeLine == nullptr) {
-    // Switch pages
-    nextFreeLine = SwitchPages(line);
-  }
-  if (nextFreeLine == nullptr) {
+  if (key >= kNumKeys) {
     return false;
   } else {
-    tlTable_[key] = nextFreeLine;
-    flash_write(nextFreeLine, line);
-    return true;
+    FlashLine_t line;
+    SetLine(line, key, value);
+    page_pointer_type nextFreeLine = findFreeLine(activePage_);
+    if (nextFreeLine == nullptr) {
+      // Switch pages
+      nextFreeLine = SwitchPages(line);
+    }
+    if (nextFreeLine == nullptr) {
+      return false;
+    } else {
+      tlTable_[key] = nextFreeLine;
+      flash_write(nextFreeLine, line);
+      return true;
+    }
   }
 }
 
