@@ -124,4 +124,16 @@ FlashFairyPP::page_pointer_type FlashFairyPP::findFreeLine(page_pointer_type pag
   return nullptr;
 }
 
+std::size_t FlashFairyPP::numEntriesLeftOnPage() const {
+  page_pointer_type nextFreeLine = findFreeLine(activePage_);
+  if (nextFreeLine == nullptr) {
+    return 0;
+  } else {
+    std::size_t usedEntries = (nextFreeLine - activePage_);
+    std::size_t totalEntries = (Config_t::pageSize / sizeof(FlashLine_t));
+    std::size_t availableEntries = totalEntries - usedEntries;
+    return availableEntries;
+  }
+}
+
 }  // namespace FlashFairyPP

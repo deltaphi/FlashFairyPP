@@ -58,6 +58,8 @@ class FlashFairyPP {
    */
   bool Format();
 
+  std::size_t numEntriesLeftOnPage() const;
+
  private:
   /**
    * Lookup table from key to memory location.

@@ -4,13 +4,17 @@
 
 namespace FlashFairyPP {
 
-TEST_F(VirtualFlashFixture, Read_Empty) { EXPECT_EQ(flashFairy.getValue(42), 0xCAFE); }
+TEST_F(VirtualFlashFixture, Read_Empty) {
+  EXPECT_EQ(flashFairy.getValue(42), 0xCAFE);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
+}
 
 TEST_F(VirtualFlashFixture, Write_Twice) {
   EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
   EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
   EXPECT_EQ(flashFairy.getValue(42), 0xBEEF);
   memoryIsEmpty((pages[0]) + 4, FlashFairyPP::Config_t::pageSize - 4);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 255);
 }
 
 TEST_F(VirtualFlashFixture, Write_OutOfBounds) {
@@ -27,6 +31,7 @@ TEST_F(VirtualFlashFixture, Store_Load_Store_SingleValue) {
   EXPECT_EQ(flashFairy.getValue(42), 0xBEEF);
   EXPECT_TRUE(flashFairy.setValue(42, 0xAFFE));
   EXPECT_EQ(flashFairy.getValue(42), 0xAFFE);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256 - 2);
 
   // At least on x86_64, the uint32s are stored in LSB.
   EXPECT_EQ(pages[0][0], 0xEF);
@@ -92,6 +97,7 @@ TEST_F(VirtualFlashFixture, Write_Reset_Load) {
   EXPECT_EQ(flashFairy2.getValue(2), 0xCAFE);
 
   EXPECT_EQ(flashFairy2.getValue(255), 0xDEAF);
+  EXPECT_EQ(flashFairy2.numEntriesLeftOnPage(), 256 - 4);
 }
 
 TEST_F(VirtualFlashFixture, WriteSecondPage) {
@@ -109,6 +115,7 @@ TEST_F(VirtualFlashFixture, WriteSecondPage) {
   for (std::size_t i = 0; i < 128; ++i) {
     EXPECT_EQ(flashFairy.getValue(i), i + 128);
   }
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 0);
 
   // Write another value, will cause an overflow to the second page.
   EXPECT_TRUE(flashFairy.setValue(25, 0x3456));
@@ -125,7 +132,32 @@ TEST_F(VirtualFlashFixture, WriteSecondPage) {
   pageIsEmpty(pages[0]);
 
   // Since we wrote to only half the keys, the second page should be half-filled.
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 128);
   memoryIsEmpty(pages[1] + (128 * 4), 1024 - (128 * 4));
+
+  // Go on to fill the second page (127 entries left)
+  for (std::size_t i = 0; i < 128; ++i) {
+    EXPECT_TRUE(flashFairy.setValue(i, i));
+  }
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 0);
+
+  // Next write should roll over
+  EXPECT_TRUE(flashFairy.setValue(25, 0xD017));
+
+  // Second page is now empty.
+  pageIsEmpty(pages[1]);
+
+  // Since we wrote to only half the keys, the first page should be half-filled.
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 128);
+  memoryIsEmpty(pages[0] + (128 * 4), 1024 - (128 * 4));
+
+  for (std::size_t i = 0; i < 128; ++i) {
+    if (i == 25) {
+      EXPECT_EQ(flashFairy.getValue(i), 0xD017) << "i: " << i;
+    } else {
+      EXPECT_EQ(flashFairy.getValue(i), i) << "i: " << i;
+    }
+  }
 }
 
 /*
