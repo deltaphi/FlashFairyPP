@@ -87,6 +87,40 @@ TEST_F(VirtualFlashFixture, Write_Reset_Load) {
   EXPECT_EQ(flashFairy2.getValue(255), 0xDEAF);
 }
 
+TEST_F(VirtualFlashFixture, WriteSecondPage) {
+  // Write a single value so often that the memory gets full
+
+  std::size_t numFlashLines = FlashFairyPP::Config_t::pageSize / sizeof(FlashFairyPP::FlashLine_t);
+
+  for (std::size_t i = 0; i < numFlashLines; ++i) {
+    EXPECT_TRUE(flashFairy.setValue(i % (FlashFairyPP::kNumKeys / 2), i));
+  }
+
+  // pages[0] is now full, pages[1] is still untouched
+  pageIsEmpty(pages[1]);
+
+  for (std::size_t i = 0; i < 128; ++i) {
+    EXPECT_EQ(flashFairy.getValue(i), i + 128);
+  }
+
+  // Write another value, will cause an overflow to the second page.
+  EXPECT_TRUE(flashFairy.setValue(25, 0x3456));
+
+  for (std::size_t i = 0; i < 128; ++i) {
+    if (i == 25) {
+      EXPECT_EQ(flashFairy.getValue(i), 0x3456) << "i: " << i;
+    } else {
+      EXPECT_EQ(flashFairy.getValue(i), i + 128) << "i: " << i;
+    }
+  }
+
+  // First page is now empty.
+  pageIsEmpty(pages[0]);
+
+  // Since we wrote to only half the keys, the second page should be half-filled.
+  memoryIsEmpty(pages[1] + (128 * 4), 1024 - (128 * 4));
+}
+
 /*
 TEST_F(VirtualFlashFixture, BothPagesFull) {
         // TODO: Write to a FlashFairy where copying over the existing data will already fill the entire page.
@@ -94,7 +128,6 @@ TEST_F(VirtualFlashFixture, BothPagesFull) {
 */
 
 /*
-
 TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
   // Set a bunch of values
 EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));

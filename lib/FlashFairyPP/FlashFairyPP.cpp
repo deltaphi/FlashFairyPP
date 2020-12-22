@@ -45,14 +45,16 @@ bool FlashFairyPP::setValue(key_type key, value_type value) {
     page_pointer_type nextFreeLine = findFreeLine(activePage_);
     if (nextFreeLine == nullptr) {
       // Switch pages
-      nextFreeLine = SwitchPages(line);
-    }
-    if (nextFreeLine == nullptr) {
-      return false;
-    } else {
-      tlTable_[key] = nextFreeLine;
-      flash_write(nextFreeLine, line);
+      SwitchPages(line);
       return true;
+    } else {
+      if (nextFreeLine == nullptr) {
+        return false;
+      } else {
+        tlTable_[key] = nextFreeLine;
+        flash_write(nextFreeLine, line);
+        return true;
+      }
     }
   }
 }
@@ -75,13 +77,18 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
   }
 
   key_type insertionKey = GetKey(updateLine);
+  std::size_t writeIdx = 0;
   for (key_type i = 0; i < kNumKeys; ++i) {
     if (i == insertionKey) {
-      flash_write(inactivePage + i, updateLine);
-      tlTable_[insertionKey] = inactivePage + i;
+      flash_write(inactivePage + writeIdx, updateLine);
+      tlTable_[insertionKey] = inactivePage + writeIdx;
+      ++writeIdx;
     } else {
-      flash_write(inactivePage + i, *tlTable_[i]);
-      tlTable_[i] = inactivePage + i;
+      if (tlTable_[i] != nullptr) {
+        flash_write(inactivePage + writeIdx, *tlTable_[i]);
+        tlTable_[i] = inactivePage + writeIdx;
+        ++writeIdx;
+      }
     }
   }
 
@@ -96,7 +103,8 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
 
 void FlashFairyPP::BuildTlTable() {
   memset(tlTable_, 0, sizeof(TranslationTable_t));
-  for (std::size_t i = 0; (i < Config_t::pageSize) && (*(activePage_ + i) != kFreePattern); i += kPtrLineIncrement) {
+  for (std::size_t i = 0; (i < Config_t::pageSize / 4) && (*(activePage_ + i) != kFreePattern);
+       i += kPtrLineIncrement) {
     key_type key = GetKey(*(activePage_ + i));
     if (key < kNumKeys) {
       tlTable_[key] = activePage_ + i;
@@ -105,7 +113,7 @@ void FlashFairyPP::BuildTlTable() {
 }
 
 FlashFairyPP::page_pointer_type FlashFairyPP::findFreeLine(page_pointer_type page) {
-  for (std::size_t i = 0; (i < Config_t::pageSize); i += kPtrLineIncrement) {
+  for (std::size_t i = 0; (i < Config_t::pageSize / 4); i += kPtrLineIncrement) {
     FlashLine_t line = *(page + i);
     if (line == kFreePattern) {
       return page + i;
