@@ -1,0 +1,16 @@
+{
+  "name": "FlashFairyPP",
+  "version": "0.0.1",
+  "description": "A Flash-EEPROM emulation initially geared at the STM32.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deltaphi/FlashFairyPP"
+  },
+  "export": {
+    "include": "lib"
+  },
+  "build": {
+    "includeDir": "lib",
+    "binDir": "lib"
+  }
+}
