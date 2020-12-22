@@ -1,6 +1,7 @@
 #ifndef __FLASHFAIRYPP__FLASHFAIRYPP_H__
 #define __FLASHFAIRYPP__FLASHFAIRYPP_H__
 
+#include <cstddef>
 #include <cstdint>
 
 extern "C" {
@@ -25,9 +26,11 @@ class FlashFairyPP {
   constexpr static const FlashLine_t kFreePattern = 0xFFFFFFFF;
   constexpr static const value_type npos = 0xCAFE;
 
-  typedef struct Config_t {
-    page_pointer_type page1;
-    page_pointer_type page2;
+  constexpr static const std::size_t kPtrLineIncrement = sizeof(FlashLine_t) / 4;
+  static_assert(kPtrLineIncrement > 0, "FlashLine_t has insufficient size");
+
+  struct Config_t {
+    page_pointer_type pages[2];
     constexpr static const size_t pageSize = 1024;
   };
 
