@@ -1,6 +1,13 @@
 #ifndef __FLASHFAIRYPP__FLASHFAIRYPP_H__
 #define __FLASHFAIRYPP__FLASHFAIRYPP_H__
 
+#include <cstdint>
+
+extern "C" {
+void flash_erase_page(uint32_t *pagePtr);
+void flash_write(uint32_t *pagePtr, uint32_t line);
+}
+
 namespace FlashFairyPP {
 
 /*
@@ -8,7 +15,84 @@ namespace FlashFairyPP {
  */
 class FlashFairyPP {
  public:
+  using key_type = uint16_t;
+  using value_type = uint16_t;
+
+  using FlashLine_t = uint32_t;
+  using page_pointer_type = FlashLine_t *;
+
+  constexpr static const size_t kNumKeys = 256;
+  constexpr static const FlashLine_t kFreePattern = 0xFFFFFFFF;
+  constexpr static const value_type npos = 0xCAFE;
+
+  typedef struct Config_t {
+    page_pointer_type page1;
+    page_pointer_type page2;
+    constexpr static const size_t pageSize = 1024;
+  };
+
+  /**
+   * \brief Initialize the FlashFairy for the given memory area.
+   */
+  bool Init(const Config_t &configuration);
+
+  /**
+   * \brief Read a value from flash storage.
+   */
+  value_type getValue(key_type key) const;
+
+  /**
+   * \brief Commit a new value to flash storage.
+   *
+   * If the new value is identical to the old value, do nothing.
+   *
+   * \return If the value was stored or the value equals the stored value.
+   */
+  bool setValue(key_type key, value_type value);
+
+  /**
+   * \brief Forcefully clear both flash pages.
+   */
+  bool Format();
+
  private:
+  /**
+   * Lookup table from key to memory location.
+   *
+   * Holds as many keys as can be represented distinctively.
+   */
+  typedef page_pointer_type TranslationTable_t[kNumKeys];
+
+  page_pointer_type activePage_;
+  TranslationTable_t tlTable_;
+  Config_t configuration_;
+
+  /**
+   *	Compacts contents of active page to inactive page.
+   * Swaps the active/inactive pointers.
+   * Rebuilds the Translation Table.
+   *
+   * If a new line is passed, that line is used instead of copying the old line.
+   * If nothing is to be replaced, pass in kFreePattern.
+   *
+   * Formats the now inactive page.
+   *
+   * \return the Address of the first free line in the new page or nullptr, if
+   *the new page is full.
+   */
+  page_pointer_type SwitchPages(FlashLine_t updateLine = kFreePattern);
+
+  /**
+   * Iniitalize the TlTable from the active page.
+   */
+  void BuildTlTable();
+
+  static page_pointer_type findFreeLine(page_pointer_type page);
+
+  static bool isEmptyPage(page_pointer_type page) {
+    // A page is empty if its first line is the free patern.
+    return *page == kFreePattern;
+  }
 };
 
 }  // namespace FlashFairyPP
