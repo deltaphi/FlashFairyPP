@@ -4,6 +4,14 @@
 
 namespace FlashFairyPP {
 
+TEST_F(VirtualFlashFixture, Format) {
+  EXPECT_THAT(*pages, ::testing::Each(0xFF));
+  memset(pages, 0x00, sizeof(pages));
+  EXPECT_THAT(*pages, ::testing::Each(0x00));
+  flashFairy.Format();
+  EXPECT_THAT(*pages, ::testing::Each(0xFF));
+}
+
 TEST_F(VirtualFlashFixture, Read_Empty) {
   EXPECT_EQ(flashFairy.getValue(42), 0xCAFE);
   EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
@@ -166,35 +174,45 @@ TEST_F(VirtualFlashFixture, BothPagesFull) {
 }
 */
 
-/*
+
 TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
-  // Set a bunch of values
-EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
-EXPECT_TRUE(flashFairy.setValue(0, 0xDEAF));
-EXPECT_TRUE(flashFairy.setValue(1, 0xDEAD));
-EXPECT_TRUE(flashFairy.setValue(1010, 0xDEAF));
+ // Write a single value so often that the memory gets full
 
-// Verify they were written
-ASSERT_EQ(flashFairy.getValue(42), 0xBEEF);
-ASSERT_EQ(flashFairy.getValue(0), 0xDEAF);
-ASSERT_EQ(flashFairy.getValue(1), 0xDEAD);
-ASSERT_EQ(flashFairy.getValue(1010), 0xDEAF);
+  std::size_t numFlashLines = FlashFairyPP::Config_t::pageSize / sizeof(FlashFairyPP::FlashLine_t);
 
-// Setup another flashFairy
-FlashFairyPP flashFairy2;
-flashFairy2.Init(config);
+  for (std::size_t i = 0; i < numFlashLines; ++i) {
+    EXPECT_TRUE(flashFairy.setValue(i % (FlashFairyPP::kNumKeys / 2), i));
+  }
 
-// Read the elements that were previously written plus elements around it.
-EXPECT_EQ(flashFairy2.getValue(41), 0xCAFE);
-EXPECT_EQ(flashFairy2.getValue(42), 0xBEEF);
-EXPECT_EQ(flashFairy2.getValue(43), 0xCAFE);
+  // pages[0] is now full, pages[1] is still untouched
+  pageIsEmpty(pages[1]);
 
-EXPECT_EQ(flashFairy2.getValue(0), 0xDEAF);
-EXPECT_EQ(flashFairy2.getValue(1), 0xDEAD);
-EXPECT_EQ(flashFairy2.getValue(2), 0xCAFE);
+  for (std::size_t i = 0; i < 128; ++i) {
+    EXPECT_EQ(flashFairy.getValue(i), i + 128);
+  }
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 0);
 
-EXPECT_EQ(flashFairy2.getValue(1010), 0xDEAF);
+  // Write another value, will cause an overflow to the second page.
+  EXPECT_TRUE(flashFairy.setValue(25, 0x3456));
+
+  // First page is now empty.
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 128);
+  pageIsEmpty(pages[0]);
+
+  // Now setup a new flashFairy on the result
+  FlashFairyPP flashFairy2;
+  flashFairy2.Init(config);
+
+  EXPECT_EQ(flashFairy2.numEntriesLeftOnPage(), 128);
+  
+  for (std::size_t i = 0; i < 128; ++i) {
+    if (i == 25) {
+      EXPECT_EQ(flashFairy2.getValue(i), 0x3456) << "i: " << i;
+    } else {
+      EXPECT_EQ(flashFairy2.getValue(i), i + 128) << "i: " << i;
+    }
+  }
 }
-*/
+
 
 }  // namespace FlashFairyPP
