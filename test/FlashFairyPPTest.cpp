@@ -168,15 +168,43 @@ TEST_F(VirtualFlashFixture, WriteSecondPage) {
   }
 }
 
-/*
 TEST_F(VirtualFlashFixture, BothPagesFull) {
-        // TODO: Write to a FlashFairy where copying over the existing data will already fill the entire page.
-}
-*/
+  // Fill both pages with useless data
+  memset(pages, 0x00, sizeof(pages));
+  EXPECT_THAT(*pages, ::testing::Each(0x00));
 
+  // (Re)initialize the flashFairy where neither page is empty.
+  flashFairy.Init(config);
+
+  // Expect to be able to read value 0 but nothing else
+  for (FlashFairyPP::key_type key = 0; key < FlashFairyPP::kNumKeys; ++key) {
+    if (key == 0) {
+      EXPECT_EQ(flashFairy.getValue(0), 0);
+    } else {
+      EXPECT_EQ(flashFairy.getValue(key), FlashFairyPP::npos);
+    }
+  }
+
+  // Now set a value
+  EXPECT_TRUE(flashFairy.setValue(42, 0xAFFE));
+
+  // Expect to be able to read value 0 and 42 but nothing else
+  for (FlashFairyPP::key_type key = 0; key < FlashFairyPP::kNumKeys; ++key) {
+    if (key == 0) {
+      EXPECT_EQ(flashFairy.getValue(key), 0);
+    } else if (key == 42) {
+      EXPECT_EQ(flashFairy.getValue(key), 0xAFFE);
+    } else {
+      EXPECT_EQ(flashFairy.getValue(key), FlashFairyPP::npos);
+    }
+  }
+
+  // Page 1 got formatted, page 0 now has the data.
+  EXPECT_THAT(pages[1], ::testing::Each(0xFF));
+}
 
 TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
- // Write a single value so often that the memory gets full
+  // Write a single value so often that the memory gets full
 
   std::size_t numFlashLines = FlashFairyPP::Config_t::pageSize / sizeof(FlashFairyPP::FlashLine_t);
 
@@ -204,7 +232,7 @@ TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
   flashFairy2.Init(config);
 
   EXPECT_EQ(flashFairy2.numEntriesLeftOnPage(), 128);
-  
+
   for (std::size_t i = 0; i < 128; ++i) {
     if (i == 25) {
       EXPECT_EQ(flashFairy2.getValue(i), 0x3456) << "i: " << i;
@@ -213,6 +241,5 @@ TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
     }
   }
 }
-
 
 }  // namespace FlashFairyPP

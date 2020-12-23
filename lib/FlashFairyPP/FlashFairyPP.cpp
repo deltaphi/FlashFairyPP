@@ -12,6 +12,8 @@
 
 namespace FlashFairyPP {
 
+const FlashFairyPP::value_type FlashFairyPP::npos;
+
 bool FlashFairyPP::Init(const Config_t& configuration) {
   this->configuration_ = configuration;
   if (isEmptyPage(configuration_.pages[1])) {
