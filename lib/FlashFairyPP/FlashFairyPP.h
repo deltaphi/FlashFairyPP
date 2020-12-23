@@ -5,8 +5,8 @@
 #include <cstdint>
 
 extern "C" {
-void flash_erase_page(uint32_t page_address);
-void flash_write(uint32_t *pagePtr, uint32_t line);
+void FlashFairy_Erase_Page(void* pagePtr);
+void FlashFairy_Write_Word(void* pagePtr, uint32_t line);
 void flash_lock();
 void flash_unlock();
 }
@@ -22,7 +22,7 @@ class FlashFairyPP {
   using value_type = uint16_t;
 
   using FlashLine_t = uint32_t;
-  using page_pointer_type = FlashLine_t *;
+  using page_pointer_type = FlashLine_t*;
 
   constexpr static const size_t kNumKeys = 256;
   constexpr static const FlashLine_t kFreePattern = 0xFFFFFFFF;
@@ -39,7 +39,7 @@ class FlashFairyPP {
   /**
    * \brief Initialize the FlashFairy for the given memory area.
    */
-  bool Init(const Config_t &configuration);
+  bool Init(const Config_t& configuration);
 
   /**
    * \brief Read a value from flash storage.

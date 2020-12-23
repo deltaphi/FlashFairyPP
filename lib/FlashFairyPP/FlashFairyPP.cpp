@@ -57,7 +57,7 @@ bool FlashFairyPP::setValue(key_type key, value_type value) {
       } else {
         tlTable_[key] = nextFreeLine;
         flash_unlock();
-        flash_write(nextFreeLine, line);
+        FlashFairy_Write_Word(nextFreeLine, line);
         flash_lock();
         return true;
       }
@@ -68,8 +68,8 @@ bool FlashFairyPP::setValue(key_type key, value_type value) {
 bool FlashFairyPP::Format() {
   memset(tlTable_, 0, sizeof(TranslationTable_t));
   flash_unlock();
-  flash_erase_page(reinterpret_cast<uint32_t>(configuration_.pages[0]));
-  flash_erase_page(reinterpret_cast<uint32_t>(configuration_.pages[1]));
+  FlashFairy_Erase_Page(configuration_.pages[0]);
+  FlashFairy_Erase_Page(configuration_.pages[1]);
   flash_lock();
   return true;
 }
@@ -91,12 +91,12 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
 
   for (key_type i = 0; i < kNumKeys; ++i) {
     if (i == insertionKey) {
-      flash_write(inactivePage + writeIdx, updateLine);
+      FlashFairy_Write_Word(inactivePage + writeIdx, updateLine);
       tlTable_[insertionKey] = inactivePage + writeIdx;
       ++writeIdx;
     } else {
       if (tlTable_[i] != nullptr) {
-        flash_write(inactivePage + writeIdx, *tlTable_[i]);
+        FlashFairy_Write_Word(inactivePage + writeIdx, *tlTable_[i]);
         tlTable_[i] = inactivePage + writeIdx;
         ++writeIdx;
       }
@@ -104,7 +104,7 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
   }
 
   // Format the active page
-  flash_erase_page(reinterpret_cast<uint32_t>(activePage_));
+  FlashFairy_Erase_Page(activePage_);
 
   flash_lock();
 
