@@ -56,7 +56,9 @@ bool FlashFairyPP::setValue(key_type key, value_type value) {
         return false;
       } else {
         tlTable_[key] = nextFreeLine;
+        flash_unlock();
         flash_write(nextFreeLine, line);
+        flash_lock();
         return true;
       }
     }
@@ -65,8 +67,10 @@ bool FlashFairyPP::setValue(key_type key, value_type value) {
 
 bool FlashFairyPP::Format() {
   memset(tlTable_, 0, sizeof(TranslationTable_t));
-  flash_erase_page(configuration_.pages[0]);
-  flash_erase_page(configuration_.pages[1]);
+  flash_unlock();
+  flash_erase_page(reinterpret_cast<uint32_t>(configuration_.pages[0]));
+  flash_erase_page(reinterpret_cast<uint32_t>(configuration_.pages[1]));
+  flash_lock();
   return true;
 }
 
@@ -82,6 +86,9 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
 
   key_type insertionKey = GetKey(updateLine);
   std::size_t writeIdx = 0;
+
+  flash_unlock();
+
   for (key_type i = 0; i < kNumKeys; ++i) {
     if (i == insertionKey) {
       flash_write(inactivePage + writeIdx, updateLine);
@@ -97,7 +104,9 @@ FlashFairyPP::page_pointer_type FlashFairyPP::SwitchPages(FlashLine_t updateLine
   }
 
   // Format the active page
-  flash_erase_page(activePage_);
+  flash_erase_page(reinterpret_cast<uint32_t>(activePage_));
+
+  flash_lock();
 
   // swap the pointers.
   activePage_ = inactivePage;

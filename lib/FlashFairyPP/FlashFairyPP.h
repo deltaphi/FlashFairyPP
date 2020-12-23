@@ -5,8 +5,10 @@
 #include <cstdint>
 
 extern "C" {
-void flash_erase_page(uint32_t *pagePtr);
+void flash_erase_page(uint32_t page_address);
 void flash_write(uint32_t *pagePtr, uint32_t line);
+void flash_lock();
+void flash_unlock();
 }
 
 namespace FlashFairyPP {
