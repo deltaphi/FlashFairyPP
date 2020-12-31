@@ -73,6 +73,24 @@ class FlashFairyPP {
   }
 
   /**
+   * \brief Reader function that scans through the entire active flash page and calls Visitor for every value that was
+   * encountered.
+   *
+   * Note that Visitor may be called multiple times for a single key - the last call contains the valid value.
+   */
+  template <class Visitor>
+  void visitEntries(Visitor& visitor) {
+    LinePtr_t pageEnd = activePage_ + linesPerPage();
+    for (LinePtr_t linePtr = activePage_; linePtr < pageEnd; linePtr += kPtrLineIncrement) {
+      if (!isEmptyLine(*linePtr)) {
+        key_type key = GetKey(*linePtr);
+        value_type value = GetValue(*linePtr);
+        visitor(key, value);
+      }
+    }
+  }
+
+  /**
    * \brief Forcefully clear both flash pages.
    */
   bool formatFlash();
@@ -90,6 +108,9 @@ class FlashFairyPP {
   PagePtr_t activePage_;
   TranslationTable_t tlTable_;
   Config_t configuration_;
+
+  static key_type GetKey(const FlashLine_t line) { return static_cast<key_type>(line >> (sizeof(value_type) * 8)); }
+  static value_type GetValue(const FlashLine_t line) { return static_cast<value_type>(line); }
 
   /**
    *	Compacts contents of active page to inactive page.

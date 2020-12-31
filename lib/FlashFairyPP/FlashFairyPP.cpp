@@ -2,9 +2,6 @@
 
 #include <cstring>
 
-#define GetKey(line) (static_cast<key_type>(line >> (sizeof(value_type) * 8)))
-#define GetValue(line) (static_cast<value_type>(line))
-
 #define SetLine(line, key, value) (line = (static_cast<FlashLine_t>(key) << (sizeof(value) * 8)) | value)
 
 #define SetKey(line, key) SetLine(line, key, GetValue(line))

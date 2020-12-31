@@ -34,6 +34,12 @@ class VirtualFlashFixture : public ::testing::Test {
   }
 };
 
+class VisitorMock {
+ public:
+  MOCK_METHOD(void, BracketOperator, (int, int), ());
+  void operator()(int key, int value) { BracketOperator(key, value); }
+};
+
 }  // namespace FlashFairyPP
 
 #endif  // __MOCKS_H__

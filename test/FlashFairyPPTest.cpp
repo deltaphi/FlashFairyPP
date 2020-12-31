@@ -276,4 +276,24 @@ TEST_F(VirtualFlashFixture, WriteSecondPage_Reset_Load) {
   }
 }
 
+TEST_F(VirtualFlashFixture, ReadVisitor) {
+  ASSERT_TRUE(flashFairy.setValue(4, 5));
+  ASSERT_TRUE(flashFairy.setValue(6, 7));
+  ASSERT_TRUE(flashFairy.setValue(8, 9));
+  ASSERT_TRUE(flashFairy.setValue(6, 9));
+
+  ::testing::StrictMock<VisitorMock> v;
+
+  EXPECT_CALL(v, BracketOperator(4, 5));
+  EXPECT_CALL(v, BracketOperator(6, 7));
+  EXPECT_CALL(v, BracketOperator(8, 9));
+  EXPECT_CALL(v, BracketOperator(6, 9));
+
+  EXPECT_EQ(flashFairy.getValue(4), 5);
+  EXPECT_EQ(flashFairy.getValue(6), 9);
+  EXPECT_EQ(flashFairy.getValue(8), 9);
+
+  flashFairy.visitEntries(v);
+}
+
 }  // namespace FlashFairyPP
