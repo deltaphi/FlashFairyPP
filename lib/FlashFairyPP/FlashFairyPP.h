@@ -56,6 +56,20 @@ class FlashFairyPP {
   bool setValue(const key_type key, const value_type value);
 
   /**
+   * \brief Sets a value only of the key is found.
+   *
+   * \return If a value was read from flash, return the new value. Otherwise, return the original value passed to this
+   * funciton.
+   */
+  value_type readValueIfAvailable(const key_type key, value_type& value) const {
+    value_type tmpValue = getValue(key);
+    if (tmpValue != npos) {
+      value = tmpValue;
+    }
+    return value;
+  }
+
+  /**
    * \brief Forcefully clear both flash pages.
    */
   bool Format();

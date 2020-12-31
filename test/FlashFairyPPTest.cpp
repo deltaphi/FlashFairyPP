@@ -16,6 +16,20 @@ TEST_F(VirtualFlashFixture, Read_Empty) {
   EXPECT_EQ(flashFairy.getValue(42), 0xCAFE);
   EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
 }
+TEST_F(VirtualFlashFixture, ReadConditional_Empty) {
+  FlashFairyPP::value_type value = 1234;
+  EXPECT_EQ(flashFairy.readValueIfAvailable(42, value), 1234);
+  EXPECT_EQ(value, 1234);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
+}
+
+TEST_F(VirtualFlashFixture, ReadConditional_Value) {
+  EXPECT_TRUE(flashFairy.setValue(42, 1234));
+  FlashFairyPP::value_type value = 27;
+  EXPECT_EQ(flashFairy.readValueIfAvailable(42, value), 1234);
+  EXPECT_EQ(value, 1234);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 255);
+}
 
 TEST_F(VirtualFlashFixture, Write_Twice) {
   EXPECT_TRUE(flashFairy.setValue(42, 0xBEEF));
