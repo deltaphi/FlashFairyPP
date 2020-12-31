@@ -13,7 +13,7 @@ class VirtualFlashFixture : public ::testing::Test {
     memset(pages, 0xFF, sizeof(pages));
     config.pages[0] = reinterpret_cast<uint32_t*>(&pages[0]);
     config.pages[1] = reinterpret_cast<uint32_t*>(&pages[1]);
-    flashFairy.Init(config);
+    flashFairy.initialize(config);
   }
 
   void TearDown() {}

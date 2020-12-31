@@ -22,7 +22,8 @@ class FlashFairyPP {
   using value_type = uint16_t;
 
   using FlashLine_t = uint32_t;
-  using page_pointer_type = FlashLine_t*;
+  using PagePtr_t = FlashLine_t*;
+  using LinePtr_t = FlashLine_t*;
 
   constexpr static const size_t kNumKeys = 256;
   constexpr static const FlashLine_t kFreePattern = 0xFFFFFFFF;
@@ -32,14 +33,14 @@ class FlashFairyPP {
   static_assert(kPtrLineIncrement > 0, "FlashLine_t has insufficient size");
 
   struct Config_t {
-    page_pointer_type pages[2];
+    PagePtr_t pages[2];
     constexpr static const size_t pageSize = 1024;
   };
 
   /**
    * \brief Initialize the FlashFairy for the given memory area.
    */
-  bool Init(const Config_t& configuration);
+  bool initialize(const Config_t& configuration);
 
   /**
    * \brief Read a value from flash storage.
@@ -62,20 +63,21 @@ class FlashFairyPP {
    * funciton.
    */
   template <typename V>
-  V readValueIfAvailable(const key_type key, V& value) const {
+  bool readValueIfAvailable(const key_type key, V& value) const {
     value_type tmpValue = getValue(key);
-    if (tmpValue != npos) {
+    bool valueAvailable = (tmpValue != npos);
+    if (valueAvailable) {
       value = static_cast<V>(tmpValue);
     }
-    return value;
+    return valueAvailable;
   }
 
   /**
    * \brief Forcefully clear both flash pages.
    */
-  bool Format();
+  bool formatFlash();
 
-  std::size_t numEntriesLeftOnPage() const;
+  std::size_t numEntriesLeftOnActivePage() const;
 
  private:
   /**
@@ -83,9 +85,9 @@ class FlashFairyPP {
    *
    * Holds as many keys as can be represented distinctively.
    */
-  typedef page_pointer_type TranslationTable_t[kNumKeys];
+  typedef LinePtr_t TranslationTable_t[kNumKeys];
 
-  page_pointer_type activePage_;
+  PagePtr_t activePage_;
   TranslationTable_t tlTable_;
   Config_t configuration_;
 
@@ -102,18 +104,30 @@ class FlashFairyPP {
    * \return the Address of the first free line in the new page or nullptr, if
    *the new page is full.
    */
-  page_pointer_type SwitchPages(FlashLine_t updateLine = kFreePattern);
+  PagePtr_t switchPages(FlashLine_t updateLine = kFreePattern);
 
   /**
    * Iniitalize the TlTable from the active page.
    */
-  void BuildTlTable();
+  void buildTranslationTable();
 
-  static page_pointer_type findFreeLine(page_pointer_type page);
+  static LinePtr_t findFreeLine(PagePtr_t page);
 
-  static bool isEmptyPage(page_pointer_type page) {
+  static bool isEmptyLine(const FlashLine_t line) { return line == kFreePattern; }
+
+  static bool isEmptyPage(const PagePtr_t page) {
     // A page is empty if its first line is the free patern.
-    return *page == kFreePattern;
+    return isEmptyLine(*page);
+  }
+
+  constexpr static std::size_t linesPerPage() { return Config_t::pageSize / sizeof(FlashLine_t); }
+
+  PagePtr_t getInactivePage() {
+    if (activePage_ == configuration_.pages[0]) {
+      return configuration_.pages[1];
+    } else {
+      return configuration_.pages[0];
+    }
   }
 };
 
