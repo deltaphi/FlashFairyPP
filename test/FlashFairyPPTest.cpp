@@ -23,11 +23,30 @@ TEST_F(VirtualFlashFixture, ReadConditional_Empty) {
   EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
 }
 
+TEST_F(VirtualFlashFixture, TypedReadConditional_Empty) {
+  enum class Values { ZERO = 0, ONE = 1 };
+
+  Values value = Values::ONE;
+  EXPECT_EQ(flashFairy.readValueIfAvailable(42, value), Values::ONE);
+  EXPECT_EQ(value, Values::ONE);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 256);
+}
+
 TEST_F(VirtualFlashFixture, ReadConditional_Value) {
   EXPECT_TRUE(flashFairy.setValue(42, 1234));
   FlashFairyPP::value_type value = 27;
   EXPECT_EQ(flashFairy.readValueIfAvailable(42, value), 1234);
   EXPECT_EQ(value, 1234);
+  EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 255);
+}
+
+TEST_F(VirtualFlashFixture, TypedReadConditional_Value) {
+  enum class Values { ZERO = 0, ONE = 1 };
+
+  EXPECT_TRUE(flashFairy.setValue(42, static_cast<FlashFairyPP::value_type>(Values::ONE)));
+  Values value = Values::ZERO;
+  EXPECT_EQ(flashFairy.readValueIfAvailable(42, value), Values::ONE);
+  EXPECT_EQ(value, Values::ONE);
   EXPECT_EQ(flashFairy.numEntriesLeftOnPage(), 255);
 }
 

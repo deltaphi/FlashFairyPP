@@ -61,10 +61,11 @@ class FlashFairyPP {
    * \return If a value was read from flash, return the new value. Otherwise, return the original value passed to this
    * funciton.
    */
-  value_type readValueIfAvailable(const key_type key, value_type& value) const {
+  template <typename V>
+  V readValueIfAvailable(const key_type key, V& value) const {
     value_type tmpValue = getValue(key);
     if (tmpValue != npos) {
-      value = tmpValue;
+      value = static_cast<V>(tmpValue);
     }
     return value;
   }
