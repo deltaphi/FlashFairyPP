@@ -44,7 +44,7 @@ class FlashFairyPP {
   /**
    * \brief Read a value from flash storage.
    */
-  value_type getValue(key_type key) const;
+  value_type getValue(const key_type key) const;
 
   /**
    * \brief Commit a new value to flash storage.
@@ -53,7 +53,7 @@ class FlashFairyPP {
    *
    * \return If the value was stored or the value equals the stored value.
    */
-  bool setValue(key_type key, value_type value);
+  bool setValue(const key_type key, const value_type value);
 
   /**
    * \brief Forcefully clear both flash pages.

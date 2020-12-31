@@ -25,7 +25,7 @@ bool FlashFairyPP::Init(const Config_t& configuration) {
   return true;
 }
 
-FlashFairyPP::value_type FlashFairyPP::getValue(key_type key) const {
+FlashFairyPP::value_type FlashFairyPP::getValue(const key_type key) const {
   if (key >= kNumKeys) {
     return npos;
   } else {
@@ -38,7 +38,7 @@ FlashFairyPP::value_type FlashFairyPP::getValue(key_type key) const {
   }
 }
 
-bool FlashFairyPP::setValue(key_type key, value_type value) {
+bool FlashFairyPP::setValue(const key_type key, const value_type value) {
   if (key >= kNumKeys) {
     return false;
   } else if (getValue(key) == value) {
