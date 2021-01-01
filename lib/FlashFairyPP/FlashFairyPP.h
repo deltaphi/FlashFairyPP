@@ -145,7 +145,7 @@ class FlashFairyPP {
     const LinePtr_t activePageEnd = getPageEnd(activePage_);
 
     FlashUnlock unlock;
-    for (auto& visitorEntry : visitor) {
+    for (const auto visitorEntry : visitor) {
       if (freeLineInFlash == nullptr || freeLineInFlash > activePageEnd) {
         return false;
       } else {
