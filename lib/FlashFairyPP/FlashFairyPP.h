@@ -64,7 +64,7 @@ class FlashFairyPP {
    */
   template <typename V>
   bool readValueIfAvailable(const key_type key, V& value) const {
-    value_type tmpValue = getValue(key);
+    const value_type tmpValue = getValue(key);
     bool valueAvailable = (tmpValue != npos);
     if (valueAvailable) {
       value = static_cast<V>(tmpValue);
@@ -79,8 +79,8 @@ class FlashFairyPP {
    * Note that Visitor may be called multiple times for a single key - the last call contains the valid value.
    */
   template <class Visitor>
-  void visitEntries(Visitor& visitor) {
-    LinePtr_t pageEnd = activePage_ + linesPerPage();
+  void visitEntries(Visitor& visitor) const {
+    const LinePtr_t pageEnd = activePage_ + linesPerPage();
     for (LinePtr_t linePtr = activePage_; linePtr < pageEnd; linePtr += kPtrLineIncrement) {
       if (!isEmptyLine(*linePtr)) {
         key_type key = GetKey(*linePtr);
@@ -134,7 +134,7 @@ class FlashFairyPP {
 
   static LinePtr_t findFreeLine(PagePtr_t page);
 
-  static bool isEmptyLine(const FlashLine_t line) { return line == kFreePattern; }
+  constexpr static bool isEmptyLine(const FlashLine_t line) { return line == kFreePattern; }
 
   static bool isEmptyPage(const PagePtr_t page) {
     // A page is empty if its first line is the free patern.
