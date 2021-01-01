@@ -143,6 +143,8 @@ class FlashFairyPP {
   bool copyFromVisitorToActivePage(const Visitor& visitor) {
     LinePtr_t freeLineInFlash = findFreeLine(activePage_);
     const LinePtr_t activePageEnd = getPageEnd(activePage_);
+
+    FlashUnlock unlock;
     for (auto& visitorEntry : visitor) {
       if (freeLineInFlash == nullptr || freeLineInFlash > activePageEnd) {
         return false;
