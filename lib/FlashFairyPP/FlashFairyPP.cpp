@@ -2,11 +2,6 @@
 
 #include <cstring>
 
-#define SetLine(line, key, value) (line = (static_cast<FlashLine_t>(key) << (sizeof(value) * 8)) | value)
-
-#define SetKey(line, key) SetLine(line, key, GetValue(line))
-#define SetValue(line, value) SetLine(line, GetKey(line), value)
-
 namespace FlashFairyPP {
 
 const FlashFairyPP::value_type FlashFairyPP::npos;
@@ -18,92 +13,36 @@ bool FlashFairyPP::initialize(const Config_t& configuration) {
   } else {
     activePage_ = configuration_.pages[1];
   }
-  buildTranslationTable();
   return true;
 }
 
 FlashFairyPP::value_type FlashFairyPP::getValue(const key_type key) const {
   FlashFairyPP::value_type result = npos;
-  if (key < kNumKeys && tlTable_[key] != nullptr) {
-    result = GetValue(*(tlTable_[key]));
-  }
+  auto visitor = [key, &result](auto flash_key, auto value) {
+    if (flash_key == key) {
+      result = value;
+    }
+  };
+  visitEntries(visitor);
   return result;
 }
 
 bool FlashFairyPP::setValue(const key_type key, const value_type value) {
   if (key >= kNumKeys) {
     return false;
-  } else if (getValue(key) == value) {
+  } else if (value == getValue(key)) {
     return true;
   } else {
-    FlashLine_t line;
-    SetLine(line, key, value);
-    LinePtr_t freeLineInFlash = findFreeLine(activePage_);
-    if (freeLineInFlash == nullptr) {
-      switchPages(line);
-      return true;
-    } else {
-      tlTable_[key] = freeLineInFlash;
-      flash_unlock();
-      FlashFairy_Write_Word(freeLineInFlash, line);
-      flash_lock();
-      return true;
-    }
+    const SingleElementVisitor visitor(key, value);
+    return storeVisitor(visitor);
   }
 }
 
 bool FlashFairyPP::formatFlash() {
-  memset(tlTable_, 0, sizeof(TranslationTable_t));
-  flash_unlock();
+  FlashUnlock unlock;
   FlashFairy_Erase_Page(configuration_.pages[0]);
   FlashFairy_Erase_Page(configuration_.pages[1]);
-  flash_lock();
   return true;
-}
-
-FlashFairyPP::PagePtr_t FlashFairyPP::switchPages(FlashLine_t updateLine) {
-  // Write all translated entries to the inactive page while updating the table
-  // entries.
-  PagePtr_t inactivePage = getInactivePage();
-
-  key_type insertionKey = GetKey(updateLine);
-  std::size_t writeIdx = 0;
-
-  flash_unlock();
-
-  for (key_type i = 0; i < kNumKeys; ++i) {
-    if (i == insertionKey) {
-      FlashFairy_Write_Word(inactivePage + writeIdx, updateLine);
-      tlTable_[insertionKey] = inactivePage + writeIdx;
-      ++writeIdx;
-    } else {
-      if (tlTable_[i] != nullptr) {
-        FlashFairy_Write_Word(inactivePage + writeIdx, *tlTable_[i]);
-        tlTable_[i] = inactivePage + writeIdx;
-        ++writeIdx;
-      }
-    }
-  }
-
-  // Format the active page
-  FlashFairy_Erase_Page(activePage_);
-
-  flash_lock();
-
-  // swap the pointers.
-  activePage_ = inactivePage;
-
-  return activePage_;
-}
-
-void FlashFairyPP::buildTranslationTable() {
-  memset(tlTable_, 0, sizeof(TranslationTable_t));
-  for (std::size_t i = 0; (i < linesPerPage()) && !isEmptyLine(activePage_[i]); i += kPtrLineIncrement) {
-    key_type key = GetKey(*(activePage_ + i));
-    if (key < kNumKeys) {
-      tlTable_[key] = activePage_ + i;
-    }
-  }
 }
 
 FlashFairyPP::LinePtr_t FlashFairyPP::findFreeLine(PagePtr_t page) {

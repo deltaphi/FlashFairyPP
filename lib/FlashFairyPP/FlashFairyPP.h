@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "FlashFairyPP/BitArray.h"
+
 extern "C" {
 void FlashFairy_Erase_Page(void* pagePtr);
 void FlashFairy_Write_Word(void* pagePtr, uint32_t line);
@@ -35,6 +37,26 @@ class FlashFairyPP {
   struct Config_t {
     PagePtr_t pages[2];
     constexpr static const size_t pageSize = 1024;
+  };
+
+  class FlashUnlock {
+   public:
+    FlashUnlock() { flash_unlock(); }
+    ~FlashUnlock() { flash_lock(); }
+  };
+
+  class SingleElementVisitor {
+   public:
+    constexpr SingleElementVisitor(const key_type key, const value_type value) : first(key), second(value) {}
+
+    bool contains(const key_type key) const { return key == first; }
+
+    const SingleElementVisitor* begin() const { return this; }
+
+    const SingleElementVisitor* end() const { return this + 1; }
+
+    const key_type first;
+    const value_type second;
   };
 
   /**
@@ -83,54 +105,104 @@ class FlashFairyPP {
     const LinePtr_t pageEnd = activePage_ + linesPerPage();
     for (LinePtr_t linePtr = activePage_; linePtr < pageEnd; linePtr += kPtrLineIncrement) {
       if (!isEmptyLine(*linePtr)) {
-        key_type key = GetKey(*linePtr);
-        value_type value = GetValue(*linePtr);
+        const key_type key = GetKey(*linePtr);
+        const value_type value = GetValue(*linePtr);
         visitor(key, value);
       }
     }
+  }
+
+  template <class Visitor>
+  bool storeVisitor(const Visitor& visitor) {
+    bool pageFull = !copyFromVisitorToActivePage(visitor);
+    if (pageFull) {
+      switchPages(visitor);
+      return copyFromVisitorToActivePage(visitor);
+    }
+    return true;
   }
 
   /**
    * \brief Forcefully clear both flash pages.
    */
   bool formatFlash();
-
   std::size_t numEntriesLeftOnActivePage() const;
 
  private:
-  /**
-   * Lookup table from key to memory location.
-   *
-   * Holds as many keys as can be represented distinctively.
-   */
-  typedef LinePtr_t TranslationTable_t[kNumKeys];
-
   PagePtr_t activePage_;
-  TranslationTable_t tlTable_;
   Config_t configuration_;
 
   static key_type GetKey(const FlashLine_t line) { return static_cast<key_type>(line >> (sizeof(value_type) * 8)); }
   static value_type GetValue(const FlashLine_t line) { return static_cast<value_type>(line); }
 
+  static FlashLine_t SetLine(key_type key, value_type value) {
+    return (static_cast<FlashLine_t>(key) << (sizeof(value) * 8)) | value;
+  }
+
+  template <class Visitor>
+  bool copyFromVisitorToActivePage(const Visitor& visitor) {
+    LinePtr_t freeLineInFlash = findFreeLine(activePage_);
+    const LinePtr_t activePageEnd = getPageEnd(activePage_);
+    for (auto& visitorEntry : visitor) {
+      if (freeLineInFlash == nullptr || freeLineInFlash > activePageEnd) {
+        return false;
+      } else {
+        FlashLine_t line = SetLine(visitorEntry.first, visitorEntry.second);
+        FlashFairy_Write_Word(freeLineInFlash, line);
+        ++freeLineInFlash;
+      }
+    }
+    return true;
+  }
+
   /**
-   *	Compacts contents of active page to inactive page.
+   * Compacts contents of active page to inactive page.
    * Swaps the active/inactive pointers.
-   * Rebuilds the Translation Table.
    *
-   * If a new line is passed, that line is used instead of copying the old line.
-   * If nothing is to be replaced, pass in kFreePattern.
+   * Does not copy any line that the Visitor claims to contain.
    *
    * Formats the now inactive page.
    *
    * \return the Address of the first free line in the new page or nullptr, if
-   *the new page is full.
+   *         the new page is full.
    */
-  PagePtr_t switchPages(FlashLine_t updateLine = kFreePattern);
+  template <class Visitor>
+  LinePtr_t switchPages(const Visitor& visitor) {
+    const PagePtr_t inactivePage = getInactivePage();
 
-  /**
-   * Iniitalize the TlTable from the active page.
-   */
-  void buildTranslationTable();
+    LinePtr_t freeLine = inactivePage;
+
+    {
+      BitArray<uint32_t, kNumKeys> bitArray;
+      const LinePtr_t inactivePageEnd = getPageEnd(inactivePage);
+      const LinePtr_t activePageEnd = getPageEnd(activePage_);
+
+      FlashUnlock unlock;
+
+      if (!isEmptyPage(inactivePage)) {
+        FlashFairy_Erase_Page(inactivePage);
+      }
+
+      for (LinePtr_t linePtr = activePageEnd - 1; linePtr >= activePage_ && freeLine < inactivePageEnd; --linePtr) {
+        if (!isEmptyLine(*linePtr)) {
+          auto lineKey = GetKey(*linePtr);
+          if (!bitArray.isSet(lineKey) && !visitor.contains(lineKey)) {
+            FlashFairy_Write_Word(freeLine, *linePtr);
+            ++freeLine;
+          }
+          bitArray.setBit(lineKey);
+        }
+      }
+
+      // Format the active page
+      FlashFairy_Erase_Page(activePage_);
+    }
+
+    // swap the pointers.
+    activePage_ = inactivePage;
+
+    return freeLine;
+  }
 
   static LinePtr_t findFreeLine(PagePtr_t page);
 
@@ -142,6 +214,8 @@ class FlashFairyPP {
   }
 
   constexpr static std::size_t linesPerPage() { return Config_t::pageSize / sizeof(FlashLine_t); }
+
+  constexpr static LinePtr_t getPageEnd(PagePtr_t page) { return page + linesPerPage(); }
 
   PagePtr_t getInactivePage() {
     if (activePage_ == configuration_.pages[0]) {
