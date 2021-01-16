@@ -11,6 +11,12 @@ endif()
 
 option(ENABLE_COVERAGE "enable_language measurement option add_compile_definitions coverage" OFF)
 
+
+add_library(flashFairyPP
+  lib/FlashFairyPP/FlashFairyPP.cpp
+)
+
+
 if (ENABLE_COVERAGE)
     include(CodeCoverage.cmake)
     append_coverage_compiler_flags()
@@ -55,12 +61,11 @@ include_directories("test")
 include_directories("lib")
 
 add_executable(FlashFairyPPTest
-    "lib/FlashFairyPP/FlashFairyPP.cpp"
-    
     "test/FlashFairyPPTest.cpp"
     "test/Mocks.cpp"
 )
 target_link_libraries(FlashFairyPPTest gtest_main gmock)
+target_link_libraries(FlashFairyPPTest flashFairyPP)
 add_test(NAME gtest_FlashFairyPPTest_test COMMAND FlashFairyPPTest)
 
 if (ENABLE_COVERAGE)
