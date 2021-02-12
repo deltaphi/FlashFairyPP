@@ -11,10 +11,15 @@ endif()
 
 option(ENABLE_COVERAGE "enable_language measurement option add_compile_definitions coverage" OFF)
 
+find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
 
 add_library(flashFairyPP
   lib/FlashFairyPP/FlashFairyPP.cpp
 )
+
+if (CLANG_TIDY_EXECUTABLE)
+    set_target_properties(flashFairyPP PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE};-checks=*,-llvmlibc-callee-namespace,-modernize-use-trailing-return-type,-fuchsia-trailing-return,-llvmlibc-implementation-in-namespace,-llvmlibc-restrict-system-libc-headers,-readability-else-after-return")
+endif()
 
 
 if (ENABLE_COVERAGE)
