@@ -73,6 +73,10 @@ target_link_libraries(FlashFairyPPTest gtest_main gmock)
 target_link_libraries(FlashFairyPPTest flashFairyPP)
 add_test(NAME gtest_FlashFairyPPTest_test COMMAND FlashFairyPPTest)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options(FlashFairyPPTest PRIVATE -Wno-gnu-zero-variadic-macro-arguments)
+endif()
+
 if (ENABLE_COVERAGE)
 setup_target_for_coverage_gcovr_html(
   NAME FlashFairyPPTest-gcovr
