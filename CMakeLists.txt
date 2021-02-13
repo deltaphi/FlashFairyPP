@@ -18,7 +18,7 @@ add_library(flashFairyPP
 )
 
 if (CLANG_TIDY_EXECUTABLE)
-    set_target_properties(flashFairyPP PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE};-checks=*,-llvmlibc-callee-namespace,-modernize-use-trailing-return-type,-fuchsia-trailing-return,-llvmlibc-implementation-in-namespace,-llvmlibc-restrict-system-libc-headers,-readability-else-after-return")
+    set_target_properties(flashFairyPP PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE}")
 endif()
 
 
