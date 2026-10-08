@@ -413,7 +413,7 @@ function(setup_target_for_coverage_gcovr_html)
             --object-directory=${PROJECT_BINARY_DIR}
             -o ${Coverage_NAME}/index.html
 
-        BYPRODUCTS ${PROJECT_BINARY_DIR}/${Coverage_NAME}  # report directory
+        BYPRODUCTS ${PROJECT_BINARY_DIR}/${Coverage_NAME}/index.html
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         DEPENDS ${Coverage_DEPENDENCIES}
         VERBATIM # Protect arguments to commands

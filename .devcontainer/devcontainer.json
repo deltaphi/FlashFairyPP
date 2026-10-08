@@ -1,0 +1,37 @@
+{
+  "name": "FlashFairyPP development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "capAdd": ["SYS_PTRACE"],
+  "securityOpt": ["seccomp=unconfined"],
+  "postCreateCommand": [
+    "cmake", "-S", ".", "-B", "build/devcontainer",
+    "-G", "Ninja",
+    "-DCMAKE_BUILD_TYPE=Debug",
+    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools"
+      ],
+      "settings": {
+        "cmake.buildDirectory": "${workspaceFolder}/build/devcontainer",
+        "cmake.generator": "Ninja",
+        "cmake.configureOnOpen": false,
+        "cmake.configureSettings": {
+          "CMAKE_EXPORT_COMPILE_COMMANDS": true
+        },
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "C_Cpp.clang_format_path": "/usr/bin/clang-format",
+        "C_Cpp.clang_format_style": "file",
+        "[cpp]": {
+          "editor.defaultFormatter": "ms-vscode.cpptools"
+        }
+      }
+    }
+  }
+}

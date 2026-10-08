@@ -52,6 +52,11 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                  EXCLUDE_FROM_ALL)
 
+# GoogleTest 1.10's stack-direction probe triggers GCC 11's warning under -Werror.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(gtest PRIVATE -Wno-error=maybe-uninitialized)
+endif()
+
 # The gtest/gtest_main targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
 # later. Otherwise we have to add them here ourselves.
