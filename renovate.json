@@ -1,6 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Keep GoogleTest compatible with C++14; 1.15 and later require C++17.",
+      "matchPackageNames": ["google/googletest"],
+      "allowedVersions": "<1.15.0"
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
