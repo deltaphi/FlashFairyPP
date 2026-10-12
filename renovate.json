@@ -17,9 +17,7 @@
       ],
       "depNameTemplate": "google/googletest",
       "datasourceTemplate": "github-tags",
-      "versioningTemplate": "semver",
-      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
-      "replacementVersionTemplate": "v{{{newVersion}}}"
+      "versioningTemplate": "semver"
     }
   ]
 }
